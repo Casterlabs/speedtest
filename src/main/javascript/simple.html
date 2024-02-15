@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="module">
+      import { STServer } from "./speedtest_browser.mjs";
+
+      const server = new STServer("http://localhost", "My Server");
+      let isRunningTest = false;
+      window.server = server;
+      server.probe();
+
+      setInterval(async () => {
+        if (isRunningTest) return;
+        await server.testPing();
+        document.querySelector(
+          "#ping"
+        ).innerText = `${server.ping.average.toFixed(2)}ms`;
+      }, 1000);
+
+      window.startTest = async function () {
+        try {
+          isRunningTest = true;
+          document.querySelector("#download-speed").innerText = "--";
+          document.querySelector("#upload-speed").innerText = "--";
+
+          await server.testDownload((result) => {
+            document.querySelector("#download-speed").innerText =
+              result.speed_str;
+          }, server.serviceData.max);
+          await server.testUpload((result) => {
+            document.querySelector("#upload-speed").innerText =
+              result.speed_str;
+          }, server.serviceData.max);
+        } finally {
+          isRunningTest = false;
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <h1>Download speed: <span id="download-speed">--</span></h1>
+    <h1>Upload speed: <span id="upload-speed">--</span></h1>
+    <h1>Ping: <span id="ping">--</span></h1>
+    <button onclick="startTest()">Start</button>
+  </body>
+</html>

@@ -12,7 +12,7 @@
 		<div class="w-96 flex flex-row">
 			<input
 				class="flex-1 bg-base-2 border border-base-4 rounded-l-md"
-				placeholder="https://yeen.host:5202"
+				placeholder="http://yeen.host:5202"
 				bind:value={address}
 			/>
 			<a

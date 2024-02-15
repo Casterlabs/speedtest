@@ -2,6 +2,7 @@ package co.casterlabs.speedtest;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -117,12 +118,28 @@ public class Daemon implements Closeable, HttpListener {
                                 );
                             }
 
-                            byte[] bytes = new byte[amount];
-                            RANDOM.nextBytes(bytes);
-
                             yield HttpResponse.newFixedLengthResponse(
                                 StandardHttpStatus.CREATED,
-                                bytes
+                                new InputStream() {
+                                    private int remaining = amount;
+
+                                    @Override
+                                    public int read() throws IOException {
+                                        if (this.remaining == 0) return -1;
+                                        this.remaining -= 1;
+                                        return RANDOM.nextInt();
+                                    }
+
+                                    @Override
+                                    public int read(byte[] b, int off, int len) throws IOException {
+                                        if (this.remaining == 0) return -1;
+                                        len = Math.min(len, this.remaining);
+                                        this.remaining -= len;
+                                        RANDOM.nextBytes(b);
+                                        return len;
+                                    }
+                                },
+                                amount
                             );
                         }
 

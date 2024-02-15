@@ -3,8 +3,8 @@
 	import { STServer } from '$lib/client/speedtest_browser';
 
 	const servers = [
-		new STServer('http://localhost', 'Test'),
-		new STServer('http://localhost2', 'Test2')
+		new STServer('https://oci-tvwzgo.casterlabs.co:9052', 'Oracle Cloud (Virginia) #tvwzgo'),
+		new STServer('https://oci-kzyqih.casterlabs.co:9052', 'Oracle Cloud (London) #kzyqih')
 	];
 </script>
 

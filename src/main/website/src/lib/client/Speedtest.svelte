@@ -238,7 +238,11 @@
 					<td class="text-right">Server:</td>
 					<td class="pl-2">
 						{#if currentServer}
-							<select class="bg-base-2 border border-base-4 rounded-md" bind:value={currentServer}>
+							<select
+								class="bg-base-2 border border-base-4 rounded-md"
+								bind:value={currentServer}
+								disabled={testRunning}
+							>
 								<option value={null}> Automatic </option>
 								{#each servers as server}
 									<option value={server}>

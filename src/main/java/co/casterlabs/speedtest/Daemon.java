@@ -71,57 +71,81 @@ public class Daemon implements Closeable, HttpListener {
             if (origin == null) origin = "*";
 
             return (switch (session.getMethod()) {
-                case GET -> HttpResponse.newFixedLengthResponse(
-                    StandardHttpStatus.OK,
-                    new JsonObject()
-                        .put(
-                            "data",
-                            new JsonObject()
-                                .put("max", LIMIT)
-                                .put("recommendedDownload", LIMIT / 2) // 100mb
-                                .put("recommendedUpload", LIMIT / 40) // 5mb
-                        )
-                        .putNull("error")
-                );
+                case GET -> {
+                    switch (session.getUri()) {
+                        case "/":
+                            yield HttpResponse.newFixedLengthResponse(
+                                StandardHttpStatus.OK,
+                                "<!DOCTYPE html>"
+                                    + "<html>"
+                                    + "Hello world!"
+                                    + "<html>"
+                            )
+                                .setMimeType("text/html");
 
-                case POST -> {
-                    int amount = Integer.parseInt(session.getQueryParameters().getOrDefault("size", Integer.toString(LIMIT)));
-
-                    if (amount > LIMIT) {
-                        yield errorResponse(
-                            StandardHttpStatus.BAD_REQUEST, "TOO_LARGE",
-                            "POST data is too large. Use GET to get (hah) the max download size."
-                        );
-                    }
-
-                    byte[] bytes = new byte[amount];
-                    RANDOM.nextBytes(bytes);
-
-                    yield HttpResponse.newFixedLengthResponse(
-                        StandardHttpStatus.CREATED,
-                        bytes
-                    );
-                }
-
-                case PUT -> {
-                    long total = 0;
-                    long read;
-                    while ((read = session.getRequestBodyStream().skip(2048)) != -1) {
-                        total += read;
-                        if (total > LIMIT) {
-                            // Over the limit.
-                            yield errorResponse(
-                                StandardHttpStatus.BAD_REQUEST, "TOO_LARGE",
-                                "PUT data is too large. Use GET to get (hah) the max upload size."
+                        case "/test/service-data":
+                            yield HttpResponse.newFixedLengthResponse(
+                                StandardHttpStatus.OK,
+                                new JsonObject()
+                                    .put(
+                                        "data",
+                                        new JsonObject()
+                                            .put("max", LIMIT)
+                                            .put("recommendedDownload", LIMIT / 2) // 100mb
+                                            .put("recommendedUpload", LIMIT / 40) // 5mb
+                                    )
+                                    .putNull("error")
                             );
-                        }
-                    }
 
-                    yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.OK);
+                        case "/test/ping":
+                            yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.OK);
+
+                        default:
+                            yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.NOT_FOUND);
+                    }
                 }
 
                 case PATCH -> {
-                    yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.OK);
+                    switch (session.getUri()) {
+                        case "/test/download": {
+                            int amount = Integer.parseInt(session.getQueryParameters().getOrDefault("size", Integer.toString(LIMIT)));
+
+                            if (amount > LIMIT) {
+                                yield errorResponse(
+                                    StandardHttpStatus.BAD_REQUEST, "TOO_LARGE",
+                                    "POST data is too large. Use GET to get (hah) the max download size."
+                                );
+                            }
+
+                            byte[] bytes = new byte[amount];
+                            RANDOM.nextBytes(bytes);
+
+                            yield HttpResponse.newFixedLengthResponse(
+                                StandardHttpStatus.CREATED,
+                                bytes
+                            );
+                        }
+
+                        case "/test/upload": {
+                            long total = 0;
+                            long read;
+                            while ((read = session.getRequestBodyStream().skip(2048)) != -1) {
+                                total += read;
+                                if (total > LIMIT) {
+                                    // Over the limit.
+                                    yield errorResponse(
+                                        StandardHttpStatus.BAD_REQUEST, "TOO_LARGE",
+                                        "PUT data is too large. Use GET to get (hah) the max upload size."
+                                    );
+                                }
+                            }
+
+                            yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.OK);
+                        }
+
+                        default:
+                            yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.NOT_FOUND);
+                    }
                 }
 
                 case OPTIONS -> HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT);
@@ -132,7 +156,7 @@ public class Daemon implements Closeable, HttpListener {
                 );
             })
                 .putHeader("Access-Control-Allow-Origin", origin)
-                .putHeader("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT, PATCH")
+                .putHeader("Access-Control-Allow-Methods", "OPTIONS, GET, PATCH")
                 .putHeader("Access-Control-Max-Age", "86400");
         } catch (Exception e) {
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.UNAUTHORIZED);

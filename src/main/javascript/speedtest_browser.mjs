@@ -1,5 +1,4 @@
 // https://transform.tools/typescript-to-javascript
-
 export class STServer {
     alive = false
     ping = {
@@ -17,7 +16,9 @@ export class STServer {
         try {
             if (!this.alive) {
                 console.info(`SpeedTest / Probe @ ${this.name}`, "Probing...")
-                const json = await (await fetch(this.address)).json()
+                const json = await (
+                    await fetch(`${this.address}/test/service-data`)
+                ).json()
                 if (!json.data) throw json
 
                 console.info(`SpeedTest / Probe @ ${this.name}`, "Server is alive!")
@@ -40,7 +41,7 @@ export class STServer {
                 const xhr = new XMLHttpRequest()
                 let startedAt
 
-                xhr.open("PATCH", this.address, true)
+                xhr.open("GET", `${this.address}/test/ping`, true)
                 xhr.onreadystatechange = () => {
                     if (xhr.readyState == 2) {
                         const ping = Date.now() - startedAt
@@ -72,11 +73,7 @@ export class STServer {
             const xhr = new XMLHttpRequest()
             let start
 
-            xhr.open(
-                "POST",
-                `${this.address}?size=${amount}`,
-                true
-            )
+            xhr.open("PATCH", `${this.address}/test/download?size=${amount}`, true)
             xhr.onreadystatechange = () => {
                 if (xhr.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
                     start = Date.now()
@@ -100,7 +97,7 @@ export class STServer {
             const xhr = new XMLHttpRequest()
             const start = Date.now()
 
-            xhr.open("PUT", this.address, true)
+            xhr.open("PATCH", `${this.address}/test/upload`, true)
             xhr.upload.onprogress = e => progress(xhr, e, start, callback)
 
             xhr.send(generateBuffer(amount))

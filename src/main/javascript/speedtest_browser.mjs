@@ -74,7 +74,7 @@ export class STServer {
 
             xhr.open(
                 "POST",
-                `${this.address}/v2/caffeinated/speedtest?size=${amount}`,
+                `${this.address}?size=${amount}`,
                 true
             )
             xhr.onreadystatechange = () => {
@@ -100,7 +100,7 @@ export class STServer {
             const xhr = new XMLHttpRequest()
             const start = Date.now()
 
-            xhr.open("PUT", `${this.address}/v2/caffeinated/speedtest`, true)
+            xhr.open("PUT", this.address, true)
             xhr.upload.onprogress = e => progress(xhr, e, start, callback)
 
             xhr.send(generateBuffer(amount))

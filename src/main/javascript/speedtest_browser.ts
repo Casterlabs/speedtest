@@ -87,11 +87,7 @@ export class STServer {
       const xhr = new XMLHttpRequest();
       let start: number;
 
-      xhr.open(
-        "POST",
-        `${this.address}/v2/caffeinated/speedtest?size=${amount}`,
-        true
-      );
+      xhr.open("POST", `${this.address}?size=${amount}`, true);
       xhr.onreadystatechange = () => {
         if (xhr.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
           start = Date.now();
@@ -118,7 +114,7 @@ export class STServer {
       const xhr = new XMLHttpRequest();
       const start = Date.now();
 
-      xhr.open("PUT", `${this.address}/v2/caffeinated/speedtest`, true);
+      xhr.open("PUT", this.address, true);
       xhr.upload.onprogress = (e) => progress(xhr, e, start, callback);
 
       xhr.send(generateBuffer(amount));

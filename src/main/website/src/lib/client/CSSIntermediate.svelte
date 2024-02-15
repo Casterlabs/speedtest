@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Theme colors.
 	import './css/colors/base/slate.css';
-	import './css/colors/primary/blue.css';
+	import './css/colors/primary/sky.css';
 	import './css/colors/overlay-black.css';
 	import './css/colors/overlay-white.css';
 
@@ -15,8 +15,8 @@
 	import { onMount } from 'svelte';
 	import { isDarkTheme } from './app';
 
-	const baseColor = 'mauve';
-	const primaryColor = 'crimson';
+	const baseColor = 'slate';
+	const primaryColor = 'sky';
 
 	onMount(iconsHook);
 </script>
@@ -38,7 +38,9 @@
 	data-theme-base={baseColor}
 	data-theme-primary={primaryColor}
 >
-	<slot />
+	{#key isDarkTheme}
+		<slot />
+	{/key}
 
 	<button
 		class="absolute top-3 right-3 lg:right-4 text-base-11"

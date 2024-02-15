@@ -1,4 +1,5 @@
 // https://transform.tools/typescript-to-javascript
+
 export class STServer {
     alive = false
     ping = {
@@ -59,6 +60,7 @@ export class STServer {
                     }
                 }
                 startedAt = Date.now()
+                xhr.onerror = reject
                 xhr.send(null)
             } catch (e) {
                 reject(e)
@@ -99,7 +101,6 @@ export class STServer {
 
             xhr.open("PATCH", `${this.address}/test/upload`, true)
             xhr.upload.onprogress = e => progress(xhr, e, start, callback)
-
             xhr.send(generateBuffer(amount))
 
             await new Promise(resolve => (xhr.onloadend = resolve))

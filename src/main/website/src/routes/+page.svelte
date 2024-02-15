@@ -22,6 +22,14 @@
 				Go
 			</a>
 		</div>
+
+		<a
+			class="block mt-2 text-sm text-base-11 underline"
+			href="https://github.com/casterlabs/speedtest"
+			target="_blank"
+		>
+			How to host your own server
+		</a>
 	</Modal>
 {/if}
 

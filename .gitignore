@@ -14,3 +14,4 @@ target/
 # Misc
 config.json
 ssl/
+dependency-reduced-pom.xml

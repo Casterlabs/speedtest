@@ -137,6 +137,10 @@ public class Daemon implements Closeable, HttpListener {
                     yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.OK);
                 }
 
+                case PATCH -> {
+                    yield HttpResponse.newFixedLengthResponse(StandardHttpStatus.OK);
+                }
+
                 case OPTIONS -> HttpResponse.newFixedLengthResponse(StandardHttpStatus.NO_CONTENT);
 
                 default -> errorResponse(
@@ -145,7 +149,7 @@ public class Daemon implements Closeable, HttpListener {
                 );
             })
                 .putHeader("Access-Control-Allow-Origin", origin)
-                .putHeader("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT")
+                .putHeader("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT, PATCH")
                 .putHeader("Access-Control-Max-Age", "86400");
         } catch (Exception e) {
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.UNAUTHORIZED);

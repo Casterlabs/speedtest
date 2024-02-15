@@ -14,7 +14,7 @@
 	}
 
 	export let servers: STServer[];
-	let currentServer = servers[0];
+	let currentServer: STServer | null = null;
 
 	let showingDebug = false;
 	let testRunning = false;
@@ -42,6 +42,7 @@
 	};
 
 	async function test() {
+		if (!currentServer) return;
 		try {
 			testRunning = true;
 			reset();
@@ -115,14 +116,18 @@
 				);
 				servers = servers; // Re-render
 
-				currentServer =
-					servers
-						.filter((s) => s.alive) //
-						.filter((s) => s.ping.average >= 0) //
-						.sort((s1, s2) => s1.ping.average - s2.ping.average)[0] || null;
+				if (currentServer == null) {
+					currentServer =
+						servers
+							.filter((s) => s.alive) //
+							.filter((s) => s.ping.average >= 0) //
+							.sort((s1, s2) => s1.ping.average - s2.ping.average)[0] || null;
+				} else {
+					currentServer = currentServer;
+				}
 			}
 
-			setTimeout(pingLoop, 500);
+			setTimeout(pingLoop, 1500);
 		}
 
 		pingLoop();
@@ -214,7 +219,7 @@
 	</div>
 
 	<div class="flex flex-row space-x-12 items-center">
-		<table class="basis-1/2">
+		<table class="basis-3/4">
 			<tr>
 				<td class="text-right">Download Speed:</td>
 				<td class="pl-2">{downloadTestResult?.speed_str}</td>
@@ -227,13 +232,21 @@
 				{#if servers.length == 1}
 					<td class="text-right">Ping:</td>
 					<td class="pl-2">
-						{currentServer.ping.average.toFixed(0)}ms
+						{currentServer?.ping.average.toFixed(0)}ms
 					</td>
 				{:else}
 					<td class="text-right">Server:</td>
 					<td class="pl-2">
 						{#if currentServer}
-							{currentServer.name} @ {currentServer.ping.average.toFixed(0)}ms
+							<select class="bg-base-2 border border-base-4 rounded-md" bind:value={currentServer}>
+								<option value={null}> Automatic </option>
+								{#each servers as server}
+									<option value={server}>
+										{server.name}
+									</option>
+								{/each}
+							</select>
+							@ {currentServer.ping.average.toFixed(0)}ms
 						{:else}
 							...
 						{/if}
@@ -277,7 +290,7 @@
 				<h2 class="mt-2 text-lg font-bold">Best Server:</h2>
 				<pre>{JSON.stringify({ ...currentServer, ping: undefined }, null, 2)}</pre>
 				<h2 class="mt-2 text-lg font-bold">Network Ping Samples:</h2>
-				<pre>{JSON.stringify(currentServer.ping, null, 0)}</pre>
+				<pre>{JSON.stringify(currentServer?.ping, null, 0)}</pre>
 			</div>
 		</div>
 	{/if}

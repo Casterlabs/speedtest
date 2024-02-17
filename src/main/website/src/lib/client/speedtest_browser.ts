@@ -105,7 +105,7 @@ export class STServer {
 			const CHUNK_SIZE = 100 * 1000 * 100; // 100mb, seems to be a practical limit.
 
 			const start = Date.now();
-			const buffer = generateBuffer(CHUNK_SIZE);
+			const buffer = new ArrayBuffer(CHUNK_SIZE);
 			let it = 0;
 
 			const send = () =>
@@ -123,12 +123,12 @@ export class STServer {
 				});
 
 			while (true) {
-				it++;
 				try {
 					await send();
 				} catch (e) {
 					break;
 				}
+				it++;
 			}
 		} catch (e) {
 			console.error(`SpeedTest / Probe @ ${this.name}`, e);
@@ -136,21 +136,6 @@ export class STServer {
 			console.info(`SpeedTest / Probe @ ${this.name}`, 'Done!');
 		}
 	}
-}
-
-function generateBuffer(bufferLength: number) {
-	const randomValues = new Uint8Array(bufferLength);
-	// Fill the buffer with random values by repeatedly calling getRandomValues()
-	let currentIndex = 0;
-	while (currentIndex < bufferLength) {
-		const remainingLength = bufferLength - currentIndex;
-		const valuesToFill = Math.min(remainingLength, 65536); // 65536 is the maximum size for one call of getRandomValues
-		const partialArray = new Uint8Array(valuesToFill);
-		crypto.getRandomValues(partialArray);
-		randomValues.set(partialArray, currentIndex);
-		currentIndex += valuesToFill;
-	}
-	return randomValues;
 }
 
 function formatSpeed(speed_bps: number) {

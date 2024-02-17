@@ -9,7 +9,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.X509ExtendedKeyManager;
@@ -35,7 +34,6 @@ import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.pem.util.PemUtils;
 
 public class Daemon implements Closeable, HttpListener {
-    private static final Random RANDOM = new Random();
     private static final long TIME_LIMIT = TimeUnit.SECONDS.toMillis(25);
     private static final long ACTUAL_TIME_LIMIT = TIME_LIMIT + TimeUnit.SECONDS.toMillis(5); // Some leeway.
 
@@ -124,7 +122,7 @@ public class Daemon implements Closeable, HttpListener {
                                         if (this.remaining == 0) return -1;
 
                                         this.remaining -= 1;
-                                        return RANDOM.nextInt();
+                                        return 0;
                                     }
 
                                     @Override
@@ -137,7 +135,6 @@ public class Daemon implements Closeable, HttpListener {
 
                                         len = Math.min(len, this.remaining);
                                         this.remaining -= len;
-                                        RANDOM.nextBytes(b);
                                         return len;
                                     }
                                 },

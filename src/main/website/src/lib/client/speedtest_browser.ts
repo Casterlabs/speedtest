@@ -75,7 +75,7 @@ export class STServer {
 
 	async testDownload(callback: (result: STServerTestResult) => void) {
 		try {
-			console.info(`SpeedTest / Probe @ ${this.name}`, 'Starting...', this);
+			console.info(`SpeedTest / Download @ ${this.name}`, 'Starting...', this);
 
 			const xhr = new XMLHttpRequest();
 			let start: number;
@@ -92,15 +92,15 @@ export class STServer {
 
 			await new Promise((resolve) => (xhr.onloadend = resolve));
 		} catch (e) {
-			console.error(`SpeedTest / Probe @ ${this.name}`, e);
+			console.error(`SpeedTest / Download @ ${this.name}`, e);
 		} finally {
-			console.info(`SpeedTest / Probe @ ${this.name}`, 'Done!');
+			console.info(`SpeedTest / Download @ ${this.name}`, 'Done!');
 		}
 	}
 
 	async testUpload(callback: (result: STServerTestResult) => void) {
 		try {
-			console.info(`SpeedTest / Probe @ ${this.name}`, 'Starting...', this);
+			console.info(`SpeedTest / Upload @ ${this.name}`, 'Starting...', this);
 
 			const CHUNK_SIZE = 100 * 1000 * 100; // 100mb, seems to be a practical limit.
 
@@ -131,9 +131,9 @@ export class STServer {
 				it++;
 			}
 		} catch (e) {
-			console.error(`SpeedTest / Probe @ ${this.name}`, e);
+			console.error(`SpeedTest / Upload @ ${this.name}`, e);
 		} finally {
-			console.info(`SpeedTest / Probe @ ${this.name}`, 'Done!');
+			console.info(`SpeedTest / Upload @ ${this.name}`, 'Done!');
 		}
 	}
 }

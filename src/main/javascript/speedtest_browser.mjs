@@ -1,5 +1,4 @@
 // https://transform.tools/typescript-to-javascript
-
 export class STServer {
     alive = false
     ping = {
@@ -68,17 +67,18 @@ export class STServer {
         })
     }
 
-    async testDownload(callback, amount = this.serviceData.recommendedDownload) {
+    async testDownload(callback) {
         try {
-            console.info(`SpeedTest / Probe @ ${this.name}`, "Starting...", this)
+            console.info(`SpeedTest / Download @ ${this.name}`, "Starting...", this)
 
             const xhr = new XMLHttpRequest()
             let start
 
-            xhr.open("PATCH", `${this.address}/test/download?size=${amount}`, true)
+            xhr.open("PATCH", `${this.address}/test/download`, true)
             xhr.onreadystatechange = () => {
                 if (xhr.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
                     start = Date.now()
+                    setTimeout(() => xhr.abort(), this.serviceData.time_limit)
                 }
             }
             xhr.onprogress = e => progress(xhr, e, start, callback)
@@ -86,45 +86,51 @@ export class STServer {
 
             await new Promise(resolve => (xhr.onloadend = resolve))
         } catch (e) {
-            console.error(`SpeedTest / Probe @ ${this.name}`, e)
+            console.error(`SpeedTest / Download @ ${this.name}`, e)
         } finally {
-            console.info(`SpeedTest / Probe @ ${this.name}`, "Done!")
+            console.info(`SpeedTest / Download @ ${this.name}`, "Done!")
         }
     }
 
-    async testUpload(callback, amount = this.serviceData.recommendedUpload) {
+    async testUpload(callback) {
         try {
-            console.info(`SpeedTest / Probe @ ${this.name}`, "Starting...", this)
+            console.info(`SpeedTest / Upload @ ${this.name}`, "Starting...", this)
 
-            const xhr = new XMLHttpRequest()
+            const CHUNK_SIZE = 100 * 1000 * 100 // 100mb, seems to be a practical limit.
+
             const start = Date.now()
+            const buffer = new ArrayBuffer(CHUNK_SIZE)
+            let it = 0
 
-            xhr.open("PATCH", `${this.address}/test/upload`, true)
-            xhr.upload.onprogress = e => progress(xhr, e, start, callback)
-            xhr.send(generateBuffer(amount))
+            const send = () =>
+                new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest()
 
-            await new Promise(resolve => (xhr.onloadend = resolve))
+                    xhr.open("PATCH", `${this.address}/test/upload`, true)
+                    xhr.upload.onprogress = e =>
+                        progress(xhr, e, start, callback, it * CHUNK_SIZE)
+                    xhr.upload.onerror = console.error
+
+                    xhr.send(buffer)
+
+                    xhr.onloadend = () => resolve()
+                    xhr.onabort = () => reject()
+                })
+
+            while (true) {
+                try {
+                    await send()
+                } catch (e) {
+                    break
+                }
+                it++
+            }
         } catch (e) {
-            console.error(`SpeedTest / Probe @ ${this.name}`, e)
+            console.error(`SpeedTest / Upload @ ${this.name}`, e)
         } finally {
-            console.info(`SpeedTest / Probe @ ${this.name}`, "Done!")
+            console.info(`SpeedTest / Upload @ ${this.name}`, "Done!")
         }
     }
-}
-
-function generateBuffer(bufferLength) {
-    const randomValues = new Uint8Array(bufferLength)
-    // Fill the buffer with random values by repeatedly calling getRandomValues()
-    let currentIndex = 0
-    while (currentIndex < bufferLength) {
-        const remainingLength = bufferLength - currentIndex
-        const valuesToFill = Math.min(remainingLength, 65536) // 65536 is the maximum size for one call of getRandomValues
-        const partialArray = new Uint8Array(valuesToFill)
-        crypto.getRandomValues(partialArray)
-        randomValues.set(partialArray, currentIndex)
-        currentIndex += valuesToFill
-    }
-    return randomValues
 }
 
 function formatSpeed(speed_bps) {
@@ -147,16 +153,14 @@ function formatSpeed(speed_bps) {
     return speed_str
 }
 
-function progress(xhr, e, start, callback) {
+function progress(xhr, e, start, callback, offset = 0) {
     const MAX_TEST_TIME = 10 * 1000
 
     let elapsed_ms = Date.now() - start
-    let speed_bps = (e.loaded * 8) / (elapsed_ms / 1000)
+    let speed_bps = ((e.loaded + offset) * 8) / (elapsed_ms / 1000)
     let progress = elapsed_ms / MAX_TEST_TIME
 
-    if (e.loaded == e.total) {
-        progress = 1 // We finished before we were done. Let's not break the UI pls.
-    } else if (progress > 1) {
+    if (progress > 1) {
         progress = 1 // CLAMP!
         xhr.abort()
     }

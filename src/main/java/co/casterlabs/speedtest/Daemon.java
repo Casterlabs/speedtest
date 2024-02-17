@@ -10,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
@@ -35,7 +36,8 @@ import nl.altindag.ssl.pem.util.PemUtils;
 
 public class Daemon implements Closeable, HttpListener {
     private static final Random RANDOM = new Random();
-    private static final int LIMIT = 200/*mb*/ * 1000 * 1000;
+    private static final long TIME_LIMIT = TimeUnit.SECONDS.toMillis(25);
+    private static final long ACTUAL_TIME_LIMIT = TIME_LIMIT + TimeUnit.SECONDS.toMillis(5); // Some leeway.
 
     public final HttpServer server;
 
@@ -91,9 +93,7 @@ public class Daemon implements Closeable, HttpListener {
                                     .put(
                                         "data",
                                         new JsonObject()
-                                            .put("max", LIMIT)
-                                            .put("recommendedDownload", LIMIT / 2) // 100mb
-                                            .put("recommendedUpload", LIMIT / 40) // 5mb
+                                            .put("time_limit", TIME_LIMIT)
                                     )
                                     .putNull("error")
                             );
@@ -109,50 +109,50 @@ public class Daemon implements Closeable, HttpListener {
                 case PATCH -> {
                     switch (session.getUri()) {
                         case "/test/download": {
-                            int amount = Integer.parseInt(session.getQueryParameters().getOrDefault("size", Integer.toString(LIMIT)));
-
-                            if (amount > LIMIT) {
-                                yield errorResponse(
-                                    StandardHttpStatus.BAD_REQUEST, "TOO_LARGE",
-                                    "POST data is too large. Use GET to get (hah) the max download size."
-                                );
-                            }
-
                             yield HttpResponse.newFixedLengthResponse(
                                 StandardHttpStatus.CREATED,
                                 new InputStream() {
-                                    private int remaining = amount;
+                                    private int remaining = Integer.MAX_VALUE;
+                                    private long startedAt = System.currentTimeMillis();
 
                                     @Override
                                     public int read() throws IOException {
+                                        if (System.currentTimeMillis() - this.startedAt > ACTUAL_TIME_LIMIT) {
+                                            throw new DropConnectionException();
+                                        }
+
                                         if (this.remaining == 0) return -1;
+
                                         this.remaining -= 1;
                                         return RANDOM.nextInt();
                                     }
 
                                     @Override
                                     public int read(byte[] b, int off, int len) throws IOException {
+                                        if (System.currentTimeMillis() - this.startedAt > ACTUAL_TIME_LIMIT) {
+                                            throw new DropConnectionException();
+                                        }
+
                                         if (this.remaining == 0) return -1;
+
                                         len = Math.min(len, this.remaining);
                                         this.remaining -= len;
                                         RANDOM.nextBytes(b);
                                         return len;
                                     }
                                 },
-                                amount
+                                Integer.MAX_VALUE
                             );
                         }
 
                         case "/test/upload": {
-                            long total = 0;
-                            long read;
-                            while ((read = session.getRequestBodyStream().skip(2048)) != -1) {
-                                total += read;
-                                if (total > LIMIT) {
+                            long startedAt = System.currentTimeMillis();
+                            while (session.getRequestBodyStream().skip(1100) != -1) {
+                                if (System.currentTimeMillis() - startedAt > ACTUAL_TIME_LIMIT) {
                                     // Over the limit.
                                     yield errorResponse(
-                                        StandardHttpStatus.BAD_REQUEST, "TOO_LARGE",
-                                        "PUT data is too large. Use GET to get (hah) the max upload size."
+                                        StandardHttpStatus.BAD_REQUEST, "TOO_LONG",
+                                        "You've been testing for too long."
                                     );
                                 }
                             }
@@ -174,6 +174,7 @@ public class Daemon implements Closeable, HttpListener {
             })
                 .putHeader("Access-Control-Allow-Origin", origin)
                 .putHeader("Access-Control-Allow-Methods", "OPTIONS, GET, PATCH")
+                .putHeader("Access-Control-Allow-Headers", "Content-Type")
                 .putHeader("Access-Control-Max-Age", "86400");
         } catch (Exception e) {
             return HttpResponse.newFixedLengthResponse(StandardHttpStatus.UNAUTHORIZED);
